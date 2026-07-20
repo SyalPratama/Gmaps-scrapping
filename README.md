@@ -13,7 +13,7 @@ Tools untuk mengambil data tempat (nama, alamat, telepon, rating, jumlah review)
 
 ## Alur Proses
 
-![Alur Proses Scraping](diagram_proses.png)
+![Alur Proses Scraping](https://raw.githubusercontent.com/SyalPratama/Gmaps-scrapping/refs/heads/main/docs/gmaps-scrapping.jpeg)
 
 1. **Input dari user** — kata kunci pencarian (contoh: `cafe di dago bandung`), jumlah data yang diinginkan, jumlah scroll, dan pilihan mode headless.
 2. **Bentuk URL pencarian** — kata kunci di-encode otomatis menjadi URL pencarian Google Maps.
@@ -27,7 +27,7 @@ Tools untuk mengambil data tempat (nama, alamat, telepon, rating, jumlah review)
 
 ## Contoh Hasil
 
-![Contoh Hasil Output](contoh_hasil.png)
+![Contoh Hasil Output](https://raw.githubusercontent.com/SyalPratama/Gmaps-scrapping/refs/heads/main/docs/contoh_hasil.png)
 
 File Excel yang dihasilkan otomatis diberi nama sesuai kata kunci pencarian, misalnya:
 
