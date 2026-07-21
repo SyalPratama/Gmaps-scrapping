@@ -102,6 +102,18 @@ async def run_masukmaps():
     input_headless = input("Jalankan browser tersembunyi/headless? (y/n, default n): ").strip().lower()
     mode_headless = input_headless == "y"
 
+    # --- Opsi filter nomor rumah/kantor (landline) ---
+    input_skip_landline = input(
+        "Lewati tempat dengan nomor rumah/kantor (bukan HP)? (y/n, default y): "
+    ).strip().lower()
+    skip_landline = (input_skip_landline != "n")  # default y
+
+    # --- Opsi filter tempat tanpa nomor telepon sama sekali ---
+    input_skip_kosong = input(
+        "Lewati tempat yang tidak memiliki nomor telepon sama sekali? (y/n, default n): "
+    ).strip().lower()
+    skip_tanpa_telepon = (input_skip_kosong == "y")  # default n
+
     url = buat_url_pencarian(keyword)
     nama_file = buat_nama_file(keyword)
 
@@ -110,6 +122,8 @@ async def run_masukmaps():
     logger.info(f"[*] Kata kunci pencarian : {keyword}")
     logger.info(f"[*] URL yang digunakan   : {url}")
     logger.info(f"[*] Mode headless        : {mode_headless}")
+    logger.info(f"[*] Lewati nomor rumah   : {skip_landline}")
+    logger.info(f"[*] Lewati tanpa telepon : {skip_tanpa_telepon}")
     logger.info(f"[*] File log disimpan di : {nama_file_log}")
 
     async with async_playwright() as p:
@@ -158,6 +172,7 @@ async def run_masukmaps():
             logger.info("[*] Memulai proses klik dan ekstraksi data detail...")
             daftar_data = []
             jumlah_dilewati_nomor_rumah = 0
+            jumlah_dilewati_tanpa_telepon = 0
 
             target_ambil = min(len(link_unik), target_maksimal)
 
@@ -184,6 +199,13 @@ async def run_masukmaps():
                     except:
                         telepon = "tidak ada telepon"
                     try:
+                        website = await page.locator('a[data-item-id="authority"]').inner_text()
+                        website = website.strip()
+                        if not website:
+                            website = "tidak ada website"
+                    except:
+                        website = "tidak ada website"
+                    try:
                         rating_element = page.locator("div.F7nice span").first
                         rating = await rating_element.inner_text()
 
@@ -200,8 +222,14 @@ async def run_masukmaps():
                     except:
                         rating_bersih = 0.0
 
+                    # === FILTER TEMPAT TANPA NOMOR TELEPON SAMA SEKALI ===
+                    if skip_tanpa_telepon and telepon == "tidak ada telepon":
+                        jumlah_dilewati_tanpa_telepon += 1
+                        logger.info(f"[SKIP] {nama} dilewati karena tidak memiliki nomor telepon.")
+                        continue
+
                     # === FILTER NOMOR RUMAH/KANTOR (LANDLINE) ===
-                    if telepon != "tidak ada telepon" and not is_nomor_hp(telepon):
+                    if skip_landline and telepon != "tidak ada telepon" and not is_nomor_hp(telepon):
                         jumlah_dilewati_nomor_rumah += 1
                         logger.info(f"[SKIP] {nama} dilewati karena nomor terdeteksi nomor rumah/kantor: {telepon}")
                         continue
@@ -212,7 +240,8 @@ async def run_masukmaps():
                         "Rating": rating_bersih,
                         "Jumlah Review": review,
                         "Alamat": alamat,
-                        "Telepon": telepon
+                        "Telepon": telepon,
+                        "Website": website
                     })
                     logger.debug(f"[V] Berhasil menyalin {nama}")
                 except Exception as e:
@@ -221,6 +250,8 @@ async def run_masukmaps():
 
             if jumlah_dilewati_nomor_rumah > 0:
                 logger.info(f"[i] Total {jumlah_dilewati_nomor_rumah} tempat dilewati karena nomor rumah/kantor.")
+            if jumlah_dilewati_tanpa_telepon > 0:
+                logger.info(f"[i] Total {jumlah_dilewati_tanpa_telepon} tempat dilewati karena tidak ada nomor telepon.")
 
             if daftar_data:
                 df = pd.DataFrame(daftar_data)
